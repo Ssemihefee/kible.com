@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kıble Bulucu</title>
+<style>
+body{font-family:sans-serif;text-align:center;padding:24px}
+button{padding:14px 22px;font-size:1rem}
+#dial{width:220px;height:220px;margin:24px auto;border:2px solid #888;border-radius:50%;position:relative}
+#arrow{position:absolute;inset:0;font-size:90px;line-height:220px;transition:transform .2s}
+</style>
+</head>
+<body>
+<h1>Kıble Bulucu</h1>
+<button onclick="basla()">Kıbleyi Bul</button>
+<div id="dial"><div id="arrow">⬆️</div></div>
+<p id="bilgi"></p>
+
+<script>
+var qibla = null, heading = null;
+var ok = document.getElementById('arrow');
+var bilgi = document.getElementById('bilgi');
+
+function hesapla(lat, lon) {
+  var r = Math.PI / 180;
+  var dl = (39.8262 - lon) * r, p1 = lat * r, p2 = 21.4225 * r;
+  var y = Math.sin(dl) * Math.cos(p2);
+  var x = Math.cos(p1) * Math.sin(p2) - Math.sin(p1) * Math.cos(p2) * Math.cos(dl);
+  qibla = (Math.atan2(y, x) / r + 360) % 360;
+  bilgi.textContent = 'Kıble: ' + qibla.toFixed(0) + '° (kuzeyden saat yönünde)';
+  ciz();
+}
+
+function ciz() {
+  if (qibla === null) return;
+  ok.style.transform = 'rotate(' + (heading === null ? qibla : qibla - heading) + 'deg)';
+}
+
+function pusula(e) {
+  if (typeof e.webkitCompassHeading === 'number') heading = e.webkitCompassHeading;
+  else if (e.alpha != null) heading = (360 - e.alpha) % 360;
+  ciz();
+}
+
+function basla() {
+  if (window.DeviceOrientationEvent && DeviceOrientationEvent.requestPermission) {
+    DeviceOrientationEvent.requestPermission().then(function (s) {
+      if (s === 'granted') addEventListener('deviceorientation', pusula, true);
+    });
+  } else {
+    addEventListener('deviceorientationabsolute', pusula, true);
+    addEventListener('deviceorientation', pusula, true);
+  }
+  navigator.geolocation.getCurrentPosition(function (p) {
+    hesapla(p.coords.latitude, p.coords.longitude);
+  }, function () {
+    bilgi.textContent = 'Konum izni verin.';
+  });
+}
+</script>
+</body>
+</html>
